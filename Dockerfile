@@ -1,33 +1,37 @@
-# Multi-stage build
-
-FROM node:22 AS builder
+# ---- builder ----
+FROM node:22-alpine AS builder
 WORKDIR /app
 
-COPY server ./server
-COPY client ./client
-COPY package*.json ./
+# server deps
+COPY server/package.json server/tsconfig.json ./server/
+RUN cd server && npm ci
 
-# Build server
-WORKDIR /app/server
-RUN npm install && npm run build
+# client deps
+COPY client/package.json client/tsconfig.json client/vite.config.ts ./client/
+RUN cd client && npm ci
 
-# Build client
-WORKDIR /app/client
-RUN npm install && npm run build
+# copy sources
+COPY server/src ./server/src
+COPY client/index.html ./client/index.html
+COPY client/src ./client/src
 
-# Final stage
-FROM node:22
+# build server & client
+RUN cd server && npm run build
+RUN cd client && npm run build
+
+# ---- runner ----
+FROM node:22-alpine AS runner
 WORKDIR /app
 
-# Copy built artifacts
+ENV NODE_ENV=production
+
+# copy server build & runtime deps
+COPY --from=builder /app/server/package.json ./server/package.json
+COPY --from=builder /app/server/node_modules ./server/node_modules
 COPY --from=builder /app/server/dist ./server/dist
-COPY --from=builder /app/client/dist ./client/dist
-COPY server/package.json ./server/package.json
-COPY client/package.json ./client/package.json
 
-# Install prod deps only
-WORKDIR /app/server
-RUN npm install --omit=dev
+# copy client build into server public
+COPY --from=builder /app/client/dist ./server/dist/public
 
-EXPOSE 3001
-CMD ["node", "dist/index.js"]
+EXPOSE 3000
+CMD ["node", "server/dist/index.js"]

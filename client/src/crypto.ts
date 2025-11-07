@@ -1,25 +1,15 @@
-// DEV ONLY: in-browser ephemeral key to "simulate" the Nexa identity app.
-// Replace this with a real wallet bridge/mobile flow later.
-import * as secp from "@noble/secp256k1";
-// fallback
-import { sha256 } from '@noble/hashes/sha256.js';
+import { sha256 } from "@noble/hashes/sha256";
+import { secp256k1 } from "@noble/secp256k1";
 
-
-
-let priv: Uint8Array | null = null;
-let pubHex: string | null = null;
-
-export async function getOrCreateKey() {
-  if (!priv) {
-    priv = secp.utils.randomPrivateKey();
-    pubHex = Buffer.from(secp.getPublicKey(priv, true)).toString("hex");
-  }
-  return { priv: priv!, pubHex: pubHex! };
+// example helpers:
+export function hash(data: Uint8Array) {
+  return sha256(data);
 }
 
-export async function signMessageHex(msg: string) {
-  const { priv } = await getOrCreateKey();
-  const digest = sha256(new TextEncoder().encode(msg));
-  const sig = await secp.sign(digest, priv, { der: false, recovered: false });
-  return Buffer.from(sig).toString("hex");
+export async function sign(msgHash: Uint8Array, privKey: Uint8Array) {
+  return await secp256k1.signAsync(msgHash, privKey, { recovered: false, der: true });
+}
+
+export async function verify(sig: Uint8Array, msgHash: Uint8Array, pubKey: Uint8Array) {
+  return await secp256k1.verifyAsync(sig, msgHash, pubKey);
 }
