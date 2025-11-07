@@ -1,22 +1,28 @@
 {
   "$schema": "https://railway.app/railway.schema.json",
   "build": {
-    "builder": "NIXPACKS"
+    "builder": "DOCKERFILE"
   },
-  "deploy": {
-    "restartPolicyType": "ALWAYS"
-  },
-  "services": {
-    "server": {
-      "path": "server",
-      "start": "npm run start",
-      "install": "npm install",
-      "build": "npm run build"
+  "services": [
+    {
+      "name": "server",
+      "env": {
+        "NODE_ENV": "production",
+        "WS_PATH": "/ws"
+      },
+      "restartPolicyType": "ON_FAILURE"
     },
-    "client": {
-      "path": "client",
-      "install": "npm install",
-      "build": "npm run build"
+    {
+      "name": "client",
+      "startCommand": "npm run preview -- --host 0.0.0.0 --port ${PORT}",
+      "rootDirectory": "client",
+      "build": {
+        "builder": "NIXPACKS"
+      },
+      "env": {
+        "VITE_API_URL": "https://<server-public-url>",
+        "VITE_WS_URL": "wss://<server-public-url>/ws"
+      }
     }
-  }
+  ]
 }

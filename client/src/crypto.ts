@@ -1,7 +1,10 @@
 // DEV ONLY: in-browser ephemeral key to "simulate" the Nexa identity app.
 // Replace this with a real wallet bridge/mobile flow later.
 import * as secp from "@noble/secp256k1";
-import { sha256 } from "@noble/hashes/sha256";
+// fallback
+import { sha256 } from '@noble/hashes/sha256.js';
+
+
 
 let priv: Uint8Array | null = null;
 let pubHex: string | null = null;
